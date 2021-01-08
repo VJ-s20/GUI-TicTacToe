@@ -1,4 +1,5 @@
 # from main import CIRCLE_RADIUS, CIRCLE_WIDTH, SPACE, SQUARE_SIZE
+# from main import SQUARE_SIZE
 import pygame
 
 pygame.init()
@@ -91,7 +92,7 @@ class Cube:
         self.value=val
 
         
-
+SQUARE_SIZE=200
 def redraw_window(screen,board):
     screen.fill((255,255,255))
     text=fnt.render(None,1,(0,0,0))
@@ -111,10 +112,14 @@ def main():
                 run=False
 
             if event.type==pygame.MOUSEBUTTONDOWN:
+                # mouseX = event.pos[0] # x
+                # mouseY = event.pos[1] # y
                 pos=pygame.mouse.get_pos()
-                clicked=board.click(pos)
+                clicked_row = int(pos[1] // SQUARE_SIZE)
+                clicked_col = int(pos[0] // SQUARE_SIZE)
+                clicked=board.click((clicked_row,clicked_col))
                 if clicked:
-                    board.select=(clicked[0],clicked[1])
+                    board.select=(clicked_row,clicked_col)
             if event.type==pygame.KEYDOWN:
                 if event.key==pygame.K_RETURN:
                     print("enter")
