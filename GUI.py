@@ -1,134 +1,125 @@
-# from main import CIRCLE_RADIUS, CIRCLE_WIDTH, SPACE, SQUARE_SIZE
-# from main import SQUARE_SIZE
 import pygame
-
+from pygame.constants import KEYDOWN, KEYUP, K_SPACE
+import random
 pygame.init()
 pygame.font.init()
-fnt=pygame.font.SysFont("comiscans",40)
-
-Bo=[" " for _ in range(9)]
-class Grid:
-    Board=[Bo[i*3:(i+1)*3] for i in range(3)]
-    print(Board)
-    def __init__(self,rows,cols,width,height):
-        self.rows=rows
-        self.cols=cols
-        self.cubes=[[Cube(self.Board[i][j],i,j,width,height) for j in range(cols)] for i in range(rows)]
-        self.width=width
-        self.height=height
-        self.selected=None
-        self.board=None
-
-    def update_board(self):
-        self.board=[[self.cubes[i][j].value for j in range(self.cols)] for i in range(self.rows)]
-
-    def draw(self,screen):
-        # Drawing the lines 
-        gap=self.width/3
-        for i in range(self.rows+1):
-            pygame.draw.line(screen,(0,0,0),(0,i*gap),(self.width,i*gap),4)
-            pygame.draw.line(screen,(0,0,0),(i*gap,0),(i*gap,self.height),4)
-
-        # # Drawing the cubes
-        # for i in range(self.rows):
-        #     for j in range(self.cols):
-        #         self.cubes[i][j].draw(screen)
-
-    def click(self,pos):
-        if pos[0]< self.width and pos[1]< self.height:
-            gap=self.width/3
-            x=pos[0]//gap
-            y=pos[1]//gap
-            return (int(y),int(x))
-
-    def select(self,row,col):
-        for i in range(self.rows):
-            for j in range(self.cols):
-                self.cubes[i][j].selected=False
-        self.cubes[row][col].selected=True
-        self.selected=(row,col)
-
-    def draw_figure(self,screen,player):
-        SQUARE_SIZE=150
-        SPACE=30
-        CIRCLE_RADIUS=60
-        CIRCLE_WIDTH=10
-        for row in range(self.rows):
-            for col in range(self.cols):
-                if self.board[row][col]==1:
-                    pygame.draw.circle( screen, (0,0,0), (int( col * SQUARE_SIZE + SQUARE_SIZE//2 ), int( row * SQUARE_SIZE + SQUARE_SIZE//2 )), CIRCLE_RADIUS, CIRCLE_WIDTH )
-                elif self.board[row][col]==2:
-                    pygame.draw.line( screen, (0,0,0), (col * SQUARE_SIZE + SPACE, row * SQUARE_SIZE + SQUARE_SIZE - SPACE), (col * SQUARE_SIZE + SQUARE_SIZE - SPACE, row * SQUARE_SIZE + SPACE), 10 )	
-                    pygame.draw.line( screen, (0,0,0), (col * SQUARE_SIZE + SPACE, row * SQUARE_SIZE + SPACE), (col * SQUARE_SIZE + SQUARE_SIZE - SPACE, row * SQUARE_SIZE + SQUARE_SIZE - SPACE), 10 )
+fnt=pygame.font.SysFont("comiscans",280)
+WIDTH=500
+SCREEN=pygame.display.set_mode((WIDTH,WIDTH))
 
 
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+WHITE = (255, 255, 255)
+GREY = (128, 128, 128)
 
 
+class Spot:
+    def __init__(self, row, col, width, total_rows):
+        self.row = row
+        self.col = col
+        self.x = row*width
+        self.y = col*width
+        self.width = width
+        self.color = WHITE
+        self.total_rows = total_rows
+        self.plyer=None
 
-
-class Cube:
-    def __init__(self,value,row,col,width,height):
-        self.value=value
-        self.row=row
-        self.col=col
-        self.width=width
-        self.height=height
-        self.selected=False
-
-    def draw(self,screen):
-    #     gap=self.width/3
-    #     x=self.col*gap
-    #     y=self.row*gap
-    #     if self.value!=" ":
-    #         Text=fnt.render(self.value,1,(255,0,0))
-    #         screen.blit(Text,(x+(gap/2 -Text.get_width()/2),y+(gap/2 -Text.get_height()/2)))
-    #     if self.selected:
-    #         pygame.draw.rect(screen,(255,0,0),(x,y,gap,gap),3)
-        for i in range(self.row):
-            for j in range(self.col):
-                pygame.draw.circle(screen,(0,0,0),(int(j*200+200//2),int(i*200+200//2)),60,15)
-
-    def set_val(self,val):
-        self.value=val
-
+    def get_pos(self):
+        return self.row, self.col    
+    def player_color(self):
+        self.color=RED 
         
-SQUARE_SIZE=200
-def redraw_window(screen,board):
-    screen.fill((255,255,255))
-    text=fnt.render(None,1,(0,0,0))
-    screen.blit(text,(250,250))
-    board.draw(screen)
+    def comp_color(self):
+        self.color=GREEN
+    def Reset(self):
+        self.color = WHITE
+
+    def player_move(self,chance):
+        self.plyer=chance 
+
+    def draw(self, win):
+        pygame.draw.rect(
+            win, self.color, (self.x, self.y, self.width, self.width),5)
+
+    def player(self,win):
+        text=fnt.render(self.plyer,1,(0,0,0))
+        win.blit(text,(self.x+15,self.y))
 
 
-def main():
-    screen=pygame.display.set_mode((460,500))
-    pygame.display.set_caption("TicTacToe")
-    board=Grid(3,3,460,460)
-    run =True
-    player="X"
+
+def get_clicked_pos(pos, rows, width):
+    gap = width // rows
+    x, y = pos
+    row = x // gap
+    col = y // gap
+    return row, col
+
+
+def make_grid(rows, width):
+    grid = []
+    gap = width//rows
+    for i in range(rows):
+        grid.append([])
+        for j in range(rows):
+            spot = Spot(i, j, gap, rows)
+            grid[i].append(spot)
+    return grid
+
+
+def draw_grid(win, rows, width):
+    gap = width//rows
+    for i in range(rows):
+        pygame.draw.line(win, GREY, (0, i*gap), (width, i*gap),3)
+        for j in range(rows):
+            pygame.draw.line(win, GREY, (j*gap, 0), (j*gap, width),3)
+
+
+def draw(win, grid, rows, width):
+    win.fill(WHITE)
+
+    for row in grid:
+        for spot in row:
+            spot.draw(win)
+            spot.player(win)
+    draw_grid(win, rows, width)
+    pygame.display.update()
+
+
+def main(win, width):
+    Rows = 3
+    grid = make_grid(Rows, width)
+    run = True
+    Board=[[i,j] for i in range(3) for j in range(3)]
     while run:
+        draw(win, grid, Rows, width)
         for event in pygame.event.get():
-            if event.type==pygame.QUIT:
-                run=False
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type==KEYDOWN:
+                if event.key==K_SPACE:
+                    player='X'
+                    pos = pygame.mouse.get_pos()
+                    row, col = get_clicked_pos(pos, Rows, width)
+                    spot = grid[row][col]
+                    spot.player_color()
+                    spot.player_move(player)
+                    if [row,col] in Board and Board:
+                        Board.pop(Board.index([row,col]))
+                if event.key==pygame.K_c:
+                    grid=make_grid(Rows,width)
+                    Board=[[i,j] for i in range(3) for j in range(3)]
+            if event.type==KEYUP:
+                if event.key==K_SPACE:
+                    if Board:
+                        player='O'
+                        x,y=random.choice(Board)
+                        spot = grid[x][y]
+                        spot.comp_color()
+                        spot.player_move(player)
+                        Board.pop(Board.index([x,y]))
+         
 
-            if event.type==pygame.MOUSEBUTTONDOWN:
-                # mouseX = event.pos[0] # x
-                # mouseY = event.pos[1] # y
-                pos=pygame.mouse.get_pos()
-                clicked_row = int(pos[1] // SQUARE_SIZE)
-                clicked_col = int(pos[0] // SQUARE_SIZE)
-                clicked=board.click((clicked_row,clicked_col))
-                if clicked:
-                    board.select=(clicked_row,clicked_col)
-            if event.type==pygame.KEYDOWN:
-                if event.key==pygame.K_RETURN:
-                    print("enter")
-                    board.draw_figure(screen,player)
-                    pygame.display.update()
-                    player="O" if player=="X" else "X"
-        redraw_window(screen,board)
-        pygame.display.update()
 
-if __name__ == "__main__":
-    main()
     pygame.quit()
+main(SCREEN, WIDTH)
